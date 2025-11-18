@@ -1,28 +1,33 @@
-import React from 'react'
-import { Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import Dashboard from './pages/Dashboard'
-import Nav from './components/Nav'
-import ProtectedRoute from './components/ProtectedRoute'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Signup from "./pages/Signup";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Nav from "./components/Nav";
+import "./App.css";
 
-export default function App(){
+function App() {
   return (
-    <div className="min-h-screen">
-      <Nav />
-      <main className="container px-4 pt-6 sm:pt-8 md:pt-10 pb-12">
+    <Router>
+      <div className="min-h-screen bg-[#0a0a0f]">
+        <Nav />
         <Routes>
-          <Route path='/' element={<Home/>} />
-          <Route path='/login' element={<Login/>} />
-          <Route path='/signup' element={<Signup/>} />
-          <Route path='/dashboard' element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
+          <Route path="/" element={<Home />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-      </main>
-    </div>
-  )
+      </div>
+    </Router>
+  );
 }
+
+export default App;

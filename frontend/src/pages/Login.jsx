@@ -1,112 +1,311 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import API from '../api/api'
-import anime from 'animejs'
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import API from "../api/api";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "../components/ui/Form";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
+import { Alert, AlertDescription } from "../components/ui/Alert";
+import {
+  ShieldAlert,
+  Mail,
+  Lock,
+  ArrowRight,
+  TrendingUp,
+  Users,
+  Gauge,
+} from "lucide-react";
+import CosmosBackground from "../components/CosmosBackground";
 
-export default function Login(){
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const nav = useNavigate()
-  const formRef = useRef(null)
+export default function Login() {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
+  const nav = useNavigate();
 
-  useEffect(() => {
-    if (formRef.current) {
-      anime({
-        targets: formRef.current,
-        translateY: [30, 0],
-        opacity: [0, 1],
-        duration: 700,
-        easing: 'easeOutCubic'
-      })
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
     }
-  }, [])
 
-  const submit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try{
-      const res = await API.post('/auth/login', { email, password })
-      localStorage.setItem('sw_token', res.data.token)
-      localStorage.setItem('sw_user', JSON.stringify(res.data.user))
-      nav('/dashboard')
-    }catch(err){
-      setError(err?.response?.data?.message || 'Login failed')
-    }finally{setLoading(false)}
-  }
+    if (!formData.password) {
+      errors.password = "Password is required";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const res = await API.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+      localStorage.setItem("sw_token", res.data.token);
+      localStorage.setItem("sw_user", JSON.stringify(res.data.user));
+      nav("/dashboard");
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+          "Login failed. Please check your credentials."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field) => (e) => {
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-      <div ref={formRef} className="max-w-md w-full bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-white/30">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">Welcome Back</h2>
-          <p className="text-slate-600">Sign in to your ShortWave account</p>
-        </div>
-
-        {error && (
-          <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <span className="text-red-700 font-medium">{error}</span>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={submit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              required
-              placeholder="Enter your email"
-              value={email}
-              onChange={e=>setEmail(e.target.value)}
-              className="w-full p-4 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-            <input
-              type="password"
-              required
-              placeholder="Enter your password"
-              value={password}
-              onChange={e=>setPassword(e.target.value)}
-              className="w-full p-4 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300 transition-all duration-200"
-            />
-          </div>
-
-          <button
-            className="btn btn-primary w-full supr disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading}
+    <CosmosBackground>
+      <div className="min-h-screen flex items-center justify-center p-4 lg:p-6">
+        <div className="w-full max-w-7xl grid lg:grid-cols-[1fr,1fr] gap-12 items-center">
+          {/* Left side - Hero */}
+          <motion.div
+            className="hidden lg:flex flex-col justify-center space-y-8 px-8"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            {loading ? (
-              <div className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Signing in...
-              </div>
-            ) : (
-              'Sign In'
-            )}
-          </button>
-        </form>
+            <div className="space-y-4">
+              <motion.h1
+                className="text-6xl lg:text-7xl font-display font-bold leading-[1.1] tracking-tight"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <span className="bg-gradient-to-br from-white via-white to-white/60 bg-clip-text text-transparent">
+                  Welcome
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-cosmos-indigo-400 via-purple-400 to-cosmos-indigo-500 bg-clip-text text-transparent">
+                  Back
+                </span>
+              </motion.h1>
 
-        <div className="mt-8 text-center">
-          <p className="text-slate-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors duration-200">
-              Sign up
-            </Link>
-          </p>
+              <motion.p
+                className="text-xl text-slate-400 leading-relaxed max-w-lg font-light"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                Sign in to access your dashboard and manage your short links.
+              </motion.p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-4 pt-8">
+              {[
+                {
+                  icon: TrendingUp,
+                  value: "10K+",
+                  label: "Users",
+                  color: "text-cosmos-indigo-400",
+                },
+                {
+                  icon: Users,
+                  value: "1M+",
+                  label: "Links",
+                  color: "text-purple-400",
+                },
+                {
+                  icon: Gauge,
+                  value: "99.9%",
+                  label: "Uptime",
+                  color: "text-emerald-400",
+                },
+              ].map((stat, i) => (
+                <motion.div
+                  key={i}
+                  className="glass p-5 rounded-2xl text-center group hover:scale-105 transition-transform duration-300"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + i * 0.1 }}
+                >
+                  <stat.icon className={`w-6 h-6 ${stat.color} mx-auto mb-2`} />
+                  <div className="text-2xl font-bold text-white mb-1">
+                    {stat.value}
+                  </div>
+                  <div className="text-xs text-slate-400">{stat.label}</div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Right side - Form */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-md mx-auto"
+          >
+            <div className="glass-strong p-8 lg:p-10 rounded-3xl shadow-2xl relative overflow-hidden glow-indigo-sm">
+              <div className="absolute inset-0 bg-gradient-to-br from-cosmos-indigo-500/10 via-transparent to-purple-500/10 pointer-events-none" />
+
+              <div className="relative z-10">
+                {/* Header */}
+                <div className="text-center mb-8">
+                  <motion.h2
+                    className="text-3xl lg:text-4xl font-display font-bold mb-3 bg-gradient-to-br from-white to-white/70 bg-clip-text text-transparent"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    Sign In
+                  </motion.h2>
+                  <motion.p
+                    className="text-slate-400 text-base"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    Continue your journey
+                  </motion.p>
+                </div>
+
+                {/* Error Alert */}
+                {error && (
+                  <Alert
+                    variant="destructive"
+                    className="mb-6 bg-red-500/10 border-red-500/20"
+                  >
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Form */}
+                <Form onSubmit={handleSubmit}>
+                  <div className="space-y-5">
+                    {/* Email Field */}
+                    <FormField>
+                      <FormItem>
+                        <FormLabel htmlFor="email" className="text-slate-200">
+                          Email Address
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative group">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-cosmos-indigo-400 transition-colors" />
+                            <Input
+                              id="email"
+                              type="email"
+                              placeholder="you@example.com"
+                              value={formData.email}
+                              onChange={handleInputChange("email")}
+                              className="pl-12 bg-white/5 border-white/10 focus:border-cosmos-indigo-500/50 focus:ring-cosmos-indigo-500/20"
+                              required
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage>{validationErrors.email}</FormMessage>
+                      </FormItem>
+                    </FormField>
+
+                    {/* Password Field */}
+                    <FormField>
+                      <FormItem>
+                        <div className="flex items-center justify-between mb-2">
+                          <FormLabel
+                            htmlFor="password"
+                            className="text-slate-200"
+                          >
+                            Password
+                          </FormLabel>
+                          <Link
+                            to="/forgot-password"
+                            className="text-xs text-cosmos-indigo-400 hover:text-cosmos-indigo-300 transition-colors"
+                          >
+                            Forgot?
+                          </Link>
+                        </div>
+                        <FormControl>
+                          <div className="relative group">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-cosmos-indigo-400 transition-colors" />
+                            <Input
+                              id="password"
+                              type="password"
+                              placeholder="Enter your password"
+                              value={formData.password}
+                              onChange={handleInputChange("password")}
+                              className="pl-12 bg-white/5 border-white/10 focus:border-cosmos-indigo-500/50 focus:ring-cosmos-indigo-500/20"
+                              required
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage>{validationErrors.password}</FormMessage>
+                      </FormItem>
+                    </FormField>
+
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      className="w-full mt-6 bg-gradient-to-r from-cosmos-indigo-600 to-cosmos-indigo-500 hover:from-cosmos-indigo-500 hover:to-cosmos-indigo-400 text-white font-semibold glow-indigo-sm hover:glow-indigo transition-all duration-300 group"
+                      disabled={loading}
+                      size="lg"
+                    >
+                      {loading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Signing you in...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          Sign In
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </Form>
+
+                {/* Footer */}
+                <div className="mt-8 text-center">
+                  <p className="text-sm text-slate-400">
+                    Don't have an account?{" "}
+                    <Link
+                      to="/signup"
+                      className="text-cosmos-indigo-400 hover:text-cosmos-indigo-300 font-semibold transition-colors duration-200 hover:underline"
+                    >
+                      Sign up for free
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
-    </div>
-  )
+    </CosmosBackground>
+  );
 }
